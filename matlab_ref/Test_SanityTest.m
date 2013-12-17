@@ -17,6 +17,11 @@
 
 clc
 clear
+% open debug options
+Para.DbgPrintOutSubLayers = true;
+Para.DbgPrintOutBeforeBackProjectionImage = true;
+Para.bProduceEachLayerImage = true;
+
 Para.B_GauVar = 1.0;
 Para.nn = 1;
 Para.SSD_Sigma = 12.5;
@@ -44,7 +49,7 @@ elseif ChannelNumber == 1
 end
 
 
-AllLayers = F1_GenerateAllLayersByGlasnerMethod(img_y,Para.Zooming,Para.B_GauVar,Para.ReconPixelOverlap,Para.TempDataFolder,Para.nn,Para.SSD_Sigma,Para.BackProjectionLoopNum);
+AllLayers = F1_GenerateAllLayersByGlasnerMethod(img_y,Para.Zooming,Para.B_GauVar,Para.ReconPixelOverlap,Para.TempDataFolder,Para.nn,Para.SSD_Sigma,Para.BackProjectionLoopNum,Para,IQLayer,ChannelNumber);
 U1_SaveGlasnerResult(AllLayers, Para, IQLayer);
 
 %The parameters of our algorithm

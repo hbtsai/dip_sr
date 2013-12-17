@@ -15,7 +15,7 @@
 %02/22/2013
 
 function AllLayers2 = F1_GenerateAllLayersByGlasnerMethod(img_y, Zooming, B_GauVar,ReconPixelOverlap,...
-    TempDataFolder,nn,SSD_Sigma,BackProjectionLoopNum)
+    TempDataFolder,nn,SSD_Sigma,BackProjectionLoopNum,Para,IQLayer,ChannelNumber)
     if Zooming == 4
         BuildLayerNum = 7;
     elseif Zooming == 3
@@ -167,13 +167,13 @@ function AllLayers2 = F1_GenerateAllLayersByGlasnerMethod(img_y, Zooming, B_GauV
     end
     clear Conv
     %Dump Layers for debug
-%    if DbgPrintOutSubLayers
-%        for i=1:5
-%            INumber = SubLayers(i).INumber;
-%            SaveFileName = [Para.TempDataFolder 'Lower_INumber' num2str(INumber) '.png'];
-%            imwrite( SubLayers(i).GridAsHighLayer / 256 , SaveFileName );
-%        end
-%    end
+    if Para.DbgPrintOutSubLayers
+        for i=1:5
+            INumber = SubLayers(i).INumber;
+            SaveFileName = [Para.TempDataFolder 'Lower_INumber' num2str(INumber) '.png'];
+            imwrite( SubLayers(i).GridAsHighLayer / 256 , SaveFileName );
+        end
+    end
     clear AllLayers HighTop HighLeft
     AllLayers = [L0; SubLayers];
 
@@ -540,10 +540,10 @@ function AllLayers2 = F1_GenerateAllLayersByGlasnerMethod(img_y, Zooming, B_GauV
         AverageImage = ImageSum ./ImageWeight;
 
         %Dump the AverageImage for debuging data before back-projection
-        %if Para.DbgPrintOutBeforeBackProjectionImage
-        %    SaveFileName = [Para.TempDataFolder 'BuildINumber' num2str(BuildINumber) 'BeforeBackProjection.png'];
-        %    imwrite( AverageImage/255 , SaveFileName );
-        %end
+        if Para.DbgPrintOutBeforeBackProjectionImage
+            SaveFileName = [Para.TempDataFolder 'BuildINumber' num2str(BuildINumber) 'BeforeBackProjection.png'];
+            imwrite( AverageImage/255 , SaveFileName );
+        end
 
         %do back-projection here
         Bk_GauVar = B_GauVar * BuildINumber / 6;
@@ -665,21 +665,21 @@ function AllLayers2 = F1_GenerateAllLayersByGlasnerMethod(img_y, Zooming, B_GauV
         BuildLayer.Conv = BuildLayer.GridAsHighLayer;
         AllLayers = [BuildLayer; AllLayers];       %move this line to the end after the layer is built    
 
-%         if Para.bProduceEachLayerImage
-%             if ChannelNumber == 3
-%                 %restore the color information
-%                 IQLayer_high = imresize(IQLayer, [BuildLayer.FormatHeight BuildLayer.FormatWidth]);
-%                 ReconYIQ = AllLayers(1).GridAsHighLayer;
-%                 ReconYIQ(:,:,2:3) = IQLayer_high;
-%                 ReconRGB = uint8(YIQ2RGB(ReconYIQ));
-%                 OutputImage = ReconRGB;
-%             elseif ChannelNumber == 1
-%                 OutputImage = Img;
-%             end
-% 
-%             SaveFileName = [Para.TempDataFolder Para.SaveName '_BuildINumber' num2str(BuildINumber) '.png'];
-%             imwrite( OutputImage , SaveFileName );
-%         end
+         if Para.bProduceEachLayerImage
+             if ChannelNumber == 3
+                 %restore the color information
+                 IQLayer_high = imresize(IQLayer, [BuildLayer.FormatHeight BuildLayer.FormatWidth]);
+                 ReconYIQ = AllLayers(1).GridAsHighLayer;
+                 ReconYIQ(:,:,2:3) = IQLayer_high;
+                 ReconRGB = uint8(YIQ2RGB(ReconYIQ));
+                 OutputImage = ReconRGB;
+             elseif ChannelNumber == 1
+                 OutputImage = Img;
+             end
+ 
+             SaveFileName = [Para.TempDataFolder Para.SaveName '_BuildINumber' num2str(BuildINumber) '.png'];
+             imwrite( OutputImage , SaveFileName );
+         end
     end
 
     %ignore unnecessary data, to save disk space
