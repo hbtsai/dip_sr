@@ -48,8 +48,18 @@ function AllLayers2 = F1_GenerateAllLayersByGlasnerMethod(img_y, Zooming, B_GauV
         SubLayers(i,1).ValidWidth = floor( SubLayers(i,1).TrueWidth );
         SubLayers(i,1).ValidHeight = floor( SubLayers(i,1).TrueHeight );
         SubLayers(i,1).Conv = Convolute(img_y, Bk_GauVar );
+        
+        SaveFileName = [Para.TempDataFolder '_dbg_y.png']
+        imwrite( uint8(img_y* 256) , SaveFileName );
+        
         %Home-made subsampling, unable to use Matlab build-in imresize
         Conv = SubLayers(i,1).Conv;
+        
+        
+                SaveFileName = [Para.TempDataFolder '_dbg_y_conv.png']
+        imwrite( uint8( Conv* 256) , SaveFileName );
+    
+        
         FormatHeight = SubLayers(i).FormatHeight;
         FormatWidth = SubLayers(i).FormatWidth;
         ValidHeight = SubLayers(i).ValidHeight;
@@ -171,7 +181,7 @@ function AllLayers2 = F1_GenerateAllLayersByGlasnerMethod(img_y, Zooming, B_GauV
         for i=1:5
             INumber = SubLayers(i).INumber;
             SaveFileName = [Para.TempDataFolder 'Lower_INumber' num2str(INumber) '.png'];
-            imwrite( SubLayers(i).GridAsHighLayer / 256 , SaveFileName );
+            imwrite( uint8(SubLayers(i).GridAsHighLayer * 256) , SaveFileName );
         end
     end
     clear AllLayers HighTop HighLeft
