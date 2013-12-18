@@ -11,7 +11,7 @@ struct MyPoint
 	int RowIdx; 
 };
 
-void Convolute(Mat* inputArray, Mat* outputArray, int GaussianVariant)
+void Convolute(Mat* inputArray, Mat* outputArray, double GaussianVariant)
 {
 
 	double Sigma = sqrt(GaussianVariant);
@@ -60,6 +60,7 @@ void Convolute(Mat* inputArray, Mat* outputArray, int GaussianVariant)
 			int r=0, c=0;
 			double SrcY=0.0, SrcX=0.0;
             for(r = MostLeftTopSourcePoint.RowIdx; r<MostRightBottomSourcePoint.RowIdx; r++)
+			{
                 for(c = MostLeftTopSourcePoint.ColIdx; c<MostRightBottomSourcePoint.ColIdx; c++)
 				{
                     SrcY = r - 0.5;
@@ -72,6 +73,7 @@ void Convolute(Mat* inputArray, Mat* outputArray, int GaussianVariant)
                         IntensitySum = IntensitySum + weight * inputArray->at<double>(r , c );
 					}
 				}
+			}
             outputArray->at<double>(m,n) = IntensitySum / WeightSum ;
 		}
 	}

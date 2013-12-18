@@ -13,6 +13,7 @@
 #include <math.h>
 #include <opencv/highgui.h>
 #include "SubLayer.h"
+#include "Convolute.h"
 
 
 #if defined(_DEBUG)
@@ -86,7 +87,38 @@ int main(int argc, char *argv[])
 	// img_yf is the y channel of original image, dynamic range [0...1]
 
 
-	SubLayer sub_layers[6];
+	StructSubLayer L0;
+    L0.INumber = 0;
+    L0.TrueWidth = img_y.cols;
+    L0.TrueHeight = img_y.rows;
+    L0.FormatWidth = L0.TrueWidth;
+    L0.FormatHeight = L0.TrueHeight;
+    L0.ValidWidth = L0.TrueWidth;
+    L0.ValidHeight = L0.TrueHeight;
+    L0.Conv = img_y;
+    L0.GridAsHighLayer = img_y;
+//    L0.PatchRecordTable;
+
+	const int NUM_SUBLAYERS=6;
+	double GauVar=1.0;
+	double ScalePerLayer=1.25;
+	StructSubLayer SubLayers[NUM_SUBLAYERS+1]; // sub_layers[0]=L0
+	int iter=1;
+	while(iter<=NUM_SUBLAYERS)
+	{
+		GauVar*=iter/NUM_SUBLAYERS;
+
+		SubLayers[iter].INumber = -iter;
+        SubLayers[iter].TrueWidth = L0.TrueWidth / pow(ScalePerLayer,iter);
+        SubLayers[iter].TrueHeight = L0.TrueHeight / pow(ScalePerLayer, iter);
+        SubLayers[iter].FormatWidth = ceil(  SubLayers[iter].TrueWidth );
+        SubLayers[iter].FormatHeight = ceil( SubLayers[iter].TrueHeight );
+        SubLayers[iter].ValidWidth = floor(  SubLayers[iter].TrueWidth );
+        SubLayers[iter].ValidHeight = floor( SubLayers[iter].TrueHeight );
+        Convolute(&img_y, &SubLayers[iter].Conv, GauVar );
+
+		iter++;
+	}
 
 
 

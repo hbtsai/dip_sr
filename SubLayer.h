@@ -2,15 +2,26 @@
 
 using namespace cv;
 
-class SubLayer
+
+class StructPatchRecordTable
+{
+	double Vector[16];
+	int HighPatch5x5_r;
+	int HighPatch5x5_c;
+	int HighPatch5x5_INumber;
+};
+
+class StructSubLayer
 {
 	public:
-		int iNumber;
+		int INumber;
 		int TrueWidth;
 		int TrueHeight;
 		int FormatWidth;
 		int FormatHeight;
 		int ValidWidth;
 		int ValidHeight;
-		Mat* Conf;
+		Mat Conv;
+		Mat GridAsHighLayer;
+		StructPatchRecordTable PatchRecordTable;
 };
