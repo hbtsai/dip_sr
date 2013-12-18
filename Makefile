@@ -6,7 +6,7 @@ CFLAGS= $(DBG_CFLAGS)
 CXXFLAGS=$(DBG_CFLAGS)
 OMP_LIBS=#-fopenmp
 LDFLAGS=-L/usr/local/lib
-LIBS= -lopencv_core -lopencv_highgui -lopencv_imgproc ${OMP_LIBS}
+LIBS= -lm -lopencv_core -lopencv_highgui -lopencv_imgproc ${OMP_LIBS}
 OBJS=main.o Convolute.o
 
 all: $(OBJS)
@@ -16,4 +16,4 @@ all: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -c -o $@ $<
 
 clean:
-	rm *.o $(EXEC)
+	rm -f *.o $(EXEC) MyTest*

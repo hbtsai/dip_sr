@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 #include <math.h>
 #include <opencv/cv.h>
 
@@ -5,8 +8,8 @@ using namespace cv;
 
 struct MyPoint
 {
-	int X; 
-	int Y; 
+	double X; 
+	double Y; 
 	int ColIdx; 
 	int RowIdx; 
 };
@@ -22,9 +25,9 @@ void Convolute(Mat* inputArray, Mat* outputArray, double GaussianVariant)
 	MyPoint MostLeftTopSourcePoint, MostRightBottomSourcePoint;
 
 	int m=0, n=0;
-	for(m=0; m<height; m++)
+	for(m=1; m<=height; m++)
 	{
-		for(n=0; n<width; n++)
+		for(n=1; n<=width; n++)
 		{
             YCoor = (m-0.5);
             XCoor = (n-0.5);
@@ -59,22 +62,23 @@ void Convolute(Mat* inputArray, Mat* outputArray, double GaussianVariant)
 			double distSqr=0.0;
 			int r=0, c=0;
 			double SrcY=0.0, SrcX=0.0;
-            for(r = MostLeftTopSourcePoint.RowIdx; r<MostRightBottomSourcePoint.RowIdx; r++)
+            for(r = MostLeftTopSourcePoint.RowIdx; r<=MostRightBottomSourcePoint.RowIdx; r++)
 			{
-                for(c = MostLeftTopSourcePoint.ColIdx; c<MostRightBottomSourcePoint.ColIdx; c++)
+
+                for(c = MostLeftTopSourcePoint.ColIdx; c<=MostRightBottomSourcePoint.ColIdx; c++)
 				{
                     SrcY = r - 0.5;
                     SrcX = c - 0.5;
                     distSqr = (SrcY - YCoor)*(SrcY - YCoor) + (SrcX - XCoor)*(SrcX - XCoor);
-                    if( distSqr < GaussianVariant * 16)
+                    if( distSqr < (GaussianVariant * 16))
 					{
                         weight = exp(-distSqr/(2*GaussianVariant))/(2*M_PI*GaussianVariant);
                         WeightSum = WeightSum + weight;
-                        IntensitySum = IntensitySum + weight * inputArray->at<double>(r , c );
+                        IntensitySum = IntensitySum + weight * inputArray->at<double>(r-1 , c-1);
 					}
 				}
 			}
-            outputArray->at<double>(m,n) = IntensitySum / WeightSum ;
+            outputArray->at<double>(m-1,n-1) = IntensitySum / WeightSum ;
 		}
 	}
 
