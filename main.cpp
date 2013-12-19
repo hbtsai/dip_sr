@@ -26,6 +26,87 @@ using namespace cv;
 
 const double ExSmall=1e-12;
 
+StructPatchRecordTable BuildPatchRecordTable(StructSubLayer* HighLayer, StructSubLayer* LowLayer)
+{
+
+	StructPatchRecordTable ret;
+
+	int HighHeight = HighLayer->ValidHeight;
+	int HighWidth = HighLayer->ValidWidth;
+	int PatchNum = (HighHeight-4)*(HighWidth-4);
+	int INumber = HighLayer->INumber;
+
+
+#if 0
+        Scale = ScalePerLayer^(i-1);      %the Scale mean the res of Con0 to Con-i
+        Conv = LowLayer.Conv;
+        for r=1:HighHeight-4
+            for c=1:HighWidth-4
+                fprintf('Build Sub Conv'' PatchRecordTable INumber:%d r:%d c:%d\n' , INumber , r , c);  
+                %Compute the grid of low
+                LowPatch = zeros(4);
+                for lowridx = 1:4
+                    Top = (r-1 + 1.25 * (lowridx-1)) * Scale;         %the coordinate in Conv layer, 1.25 is the shift in the high-res cooredinate
+                    Bottom = Top + 1.25 * Scale;
+                    r1 = floor(Top) + 1;                        %r1 means rstart      %the pixel index in ConvLayer
+                    r2 = floor(Bottom-ExSmall)+1;               %r2 means rend
+                    for lowcidx = 1:4
+                        Left = (c-1 + 1.25 * (lowcidx-1)) * Scale;
+                        Right = Left + 1.25 * Scale;
+                        c1 = floor(Left) + 1;                   %c1 means cstart
+                        c2 = floor(Right-ExSmall) + 1;          %c2 means cend
+
+                        %Compute the sum of the range
+                        Portion = (ceil(Top+ExSmall) - Top) * (ceil(Left+ExSmall)-Left);
+                        Sum = Conv(r1,c1) * Portion;     %TopLeft
+                        Portion = (ceil(Top+ExSmall) - Top) * (Right-floor(Right-ExSmall));
+                        Sum = Sum + Conv(r1,c2) * Portion;   %TopRight
+                        Portion = (Bottom - floor(Bottom-ExSmall)) * (ceil(Left+ExSmall)-Left);
+                        Sum = Sum + Conv(r2,c1) * Portion;   %BottomLeft
+                        Portion = (Bottom - floor(Bottom-ExSmall)) * (Right-floor(Right-ExSmall));
+                        Sum = Sum + Conv(r2,c2) * Portion;   %BottomRight
+                        %for 4 edge
+                        if c1+1 ~= c2
+                            PortionTop = ceil(Top+ExSmall) - Top;
+                            PortionBottom = Bottom - floor(Bottom-ExSmall);
+                            for c3 = c1+1:c2-1
+                                Sum = Sum + Conv(r1,c3)*PortionTop;      
+                                Sum = Sum + Conv(r2,c3)*PortionBottom;      
+                            end
+                        end
+                        if r1+1 ~= r2
+                            PortionLeft = ceil(Left+ExSmall) - Left;
+                            PortionRight = Right - floor(Right-ExSmall);
+                            for r3 = r1+1:r2-1
+                                Sum = Sum + Conv(r3,c1)*PortionLeft;
+                                Sum = Sum + Conv(r3,c2)*PortionRight;
+                            end
+                        end
+                        %for interior pixels
+                        if r1+1<r2 && c1+1<c2
+                            for r3=r1+1:r2-1
+                                for c3=c1+1:c2-1
+                                    Sum = Sum + Conv(r3,c3);
+                                end
+                            end
+                        end
+                        LowPatch(lowridx,lowcidx) = Sum / (1.25*Scale)^2;       %becuase we map 1.25*Scale x 1.25*Scale pixels into a pixel
+                    end
+                end
+                %save the vector and r,c,i
+                idx = idx + 1;
+                PatchRecordTable(idx).HighPatch5x5_r = r;
+                PatchRecordTable(idx).HighPatch5x5_c = c;
+                PatchRecordTable(idx).HighPatch5x5_INumber = INumber;
+                PatchRecordTable(idx).Vector = reshape(LowPatch, 16,1);           %here is the bug, the value of LowPatch is too high 
+            end   %end of for c=1:HighWidth-4
+        end
+
+%endif
+#endif
+	return ret;
+}
+
 Mat GridSubSampling(Mat* Conv, int FormatHeight, int FormatWidth, int ValidHeight, int ValidWidth, 
 		int TrueHeight, int TrueWidth, double Ratio, int HighHeight, int HighWidth)
 {
@@ -297,6 +378,11 @@ int main(int argc, char *argv[])
 #endif
 
 
+	for(iter=1; iter<NUM_SUBLAYERS; iter++)
+	{
+
+		BuildPatchRecordTable(&SubLayers[iter-1], &SubLayers[iter]);
+	}
 
 
 #if 0
