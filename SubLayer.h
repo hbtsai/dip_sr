@@ -5,10 +5,11 @@ using namespace cv;
 
 class StructPatchRecordTable
 {
-	double Vector[16];
-	int HighPatch5x5_r;
-	int HighPatch5x5_c;
-	int HighPatch5x5_INumber;
+    public:
+    	Mat Vector;//(16, 1, CV_64FC1);
+    	int HighPatch5x5_r;
+    	int HighPatch5x5_c;
+    	int HighPatch5x5_INumber;
 };
 
 class StructSubLayer
