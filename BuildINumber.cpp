@@ -167,6 +167,7 @@ StructPatchRecordTable BuildINumber(StructSubLayer* L0, StructSubLayer* AllLayer
     		ret.Vector = LowPatch.reshape(16,1);
     	}
     }
-    BuildLayerPatchNumber = length(ret);
-
+    return ret;
 }
+
+
