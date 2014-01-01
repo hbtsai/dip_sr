@@ -14,6 +14,7 @@
 #include <opencv/highgui.h>
 #include "SubLayer.h"
 #include "Convolute.h"
+#include "Backprojection.h"
 
 
 #if defined(_DEBUG)
@@ -72,8 +73,6 @@ StructPatchRecordTable BuildPatchRecordTable(StructSubLayer* HighLayer, StructSu
                         Sum = Sum + Conv.at<double>(r2-1,c1-1) * Portion;   //BottomLeft
                         Portion = (Bottom - floor(Bottom-ExSmall)) * (Right-floor(Right-ExSmall));
                         Sum = Sum + Conv.at<double>(r2-1,c2-1) * Portion;   //BottomRight
-
-
 
                         //for 4 edge
                         if(c1+1 != c2)
@@ -368,7 +367,6 @@ int main(int argc, char *argv[])
 	}
 
 	
-	
 #if 0
 	char fname[1024]={};
 	Mat testimg, output;
@@ -392,9 +390,14 @@ int main(int argc, char *argv[])
 
 
 	for(iter=1; iter<NUM_SUBLAYERS; iter++)
-	{
-		BuildPatchRecordTable(&SubLayers[iter-1], &SubLayers[iter], ScalePerLayer, iter);
-	}
+    {
+		SubLayers[iter].PatchRecordTable = BuildPatchRecordTable(&SubLayers[iter-1], &SubLayers[iter], ScalePerLayer, iter);
+
+
+//        BackProjection(GauVar_r, iter);
+
+
+    }
 
 
 #if 0
@@ -410,6 +413,8 @@ int main(int argc, char *argv[])
 	namedWindow("img_yiq", CV_WINDOW_AUTOSIZE);
 	imshow("img_yiq", out);
 #endif
+
+
 
 	waitKey(0);
 			
