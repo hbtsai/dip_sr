@@ -3,6 +3,8 @@
 using namespace cv;
 
 
+const double ExSmall=1e-12;
+
 class StructPatchRecordTable
 {
     public:
@@ -24,5 +26,5 @@ class StructSubLayer
 		int ValidHeight;
 		Mat Conv;
 		Mat GridAsHighLayer;
-		StructPatchRecordTable PatchRecordTable;
+		StructPatchRecordTable *PatchRecordTable;
 };

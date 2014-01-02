@@ -4,37 +4,67 @@ Author:     Mave Yeap
 Date:       Dec,2013
 [DESCRIPTION]: BuildINumber file.
 */
-
+#include "SubLayer.h"
 #include "BuildINumber.h"
 
 using namespace cv;
 
-StructPatchRecordTable BuildINumber(StructSubLayer* L0, StructSubLayer* AllLayers, double ScalePerLayer,int ReconPixelOverlap, int NUM_SUBLAYERS) {
-	int HighHeight, HighWidth, Overlap, INumber, PatchNum, nn, ridx, r, c, h, w;
+
+StructPatchRecordTable BuildINumber_func(int BuildINumber, StructSubLayer* AllLayers, double ScalePerLayer,int ReconPixelOverlap, int NUM_SUBLAYERS) 
+{
+	int HighHeight, HighWidth, Overlap, INumber, PatchNum, nn, ridx, cidx, r, c, h, w;
 	int TopPortion, LeftPortion, BottomPortion, RightPortion;
 	int BuildLayerPatchNumber, TotalPatchNum, AvailableLayerNum, AnnSearchPoolNumber, Dim, sigma;
+    double c1, r1;
 	double HighTop, HighLeft, LowTop, LowLeft, WeightSum;
-	double TopContribution, BottomContribution, LeftContribution, RightContribution;
+//	double TopContribution, BottomContribution, LeftContribution, RightContribution;
 	double TopLeftPortion, TopRightPortion, BottomLeftPortion, BottomRightPortion;
-	double TopLeftContribution, TopRightContribution, BottomLeftContribution, BottomRightContribution;
+//	double TopLeftContribution, TopRightContribution, BottomLeftContribution, BottomRightContribution;
+    Mat TopLeftContribution = Mat::zeros(4, 4, CV_64F);
+    Mat TopRightContribution = Mat::zeros(4, 4, CV_64F);
+    Mat BottomLeftContribution = Mat::zeros(4, 4, CV_64F);
+    Mat BottomRightContribution = Mat::zeros(4, 4, CV_64F);
+    Mat TopContribution = Mat::zeros(4, 4, CV_64F);
+    Mat BottomContribution = Mat::zeros(4, 4, CV_64F);
+    Mat LeftContribution = Mat::zeros(4, 4, CV_64F);
+    Mat RightContribution = Mat::zeros(4, 4, CV_64F);
     bool ispc;
-	StructSubLayer BuildLayer[7], LowLayer;
+	StructSubLayer BuildLayer, LowLayer;
     StructPatchRecordTable PatchMappingTable;
 	Mat LowPatch(4, 4, CV_64FC1);
+    StructSubLayer L0 = AllLayers[0];
 
 	/*Add an imagine layer to be reconstructed*/
-    BuildLayer[iter].INumber = iter;
-    BuildLayer[iter].TrueWidth = L0->TrueWidth * pow(ScalePerLayer, iter);
-    BuildLayer[iter].TrueHeight = L0->TrueHeight * pow(ScalePerLayer, iter);
-    BuildLayer[iter].FormatWidth = ceil(BuildLayer[iter].TrueWidth);
-    BuildLayer[iter].FormatHeight = ceil(BuildLayer[iter].TrueHeight);
-    BuildLayer[iter].ValidWidth = floor(BuildLayer[iter].TrueWidth);
-    BuildLayer[iter].ValidHeight = floor(BuildLayer[iter].TrueHeight);
+    BuildLayer.INumber = BuildINumber;
+    BuildLayer.TrueWidth = L0.TrueWidth * pow(ScalePerLayer, BuildINumber);
+    BuildLayer.TrueHeight = L0.TrueHeight * pow(ScalePerLayer, BuildINumber);
+    BuildLayer.FormatWidth = ceil(BuildLayer.TrueWidth);
+    BuildLayer.FormatHeight = ceil(BuildLayer.TrueHeight);
+    BuildLayer.ValidWidth = floor(BuildLayer.TrueWidth);
+    BuildLayer.ValidHeight = floor(BuildLayer.TrueHeight);
+    /* zeroing following struct
+    BuildLayer.Conv = 
+    BuildLayer.GridAsHighLayer = 
+    BuildLayer.PatchRecordTable = 
+    */
+
 	/*Build PatchRecordTable for ANN Query*/
-	HighHeight = BuildLayer[iter].FormatHeight;
-	HighWidth = BuildLayer[iter].FormatWidth;
+	HighHeight = BuildLayer.FormatHeight;
+	HighWidth = BuildLayer.FormatWidth;
 	Overlap = ReconPixelOverlap;
 	/*Matlab array*/
+    int rArray[HighHeight];
+    int cArray[HighWidth];
+    int m=0, n=0;
+    for(m=0; m<=(HighHeight-4); m++)
+        rArray[m]=m;
+    for(n=0; n<=(HighWidth-4); n++)
+        cArray[n]=n;
+    if(rArray[HighHeight-4]!=HighHeight-4)
+        rArray[HighHeight-3]=HighHeight-4;
+    if(cArray[HighWidth-4]!=HighWidth-4)
+        cArray[HighWidth-3]=HighWidth-4;
+
 	/*rArray = 1:5-Overlap:HighHeight-4;
     if rArray(end) ~= HighHeight-4
         rArray = [1:5-Overlap:HighHeight-4 HighHeight-4];       %the last patch has to be done
@@ -48,19 +78,38 @@ StructPatchRecordTable BuildINumber(StructSubLayer* L0, StructSubLayer* AllLayer
     w = LowLayer.FormatWidth;
     Mat LowerLayer_Grid = Mat::zeros(h + 1, w + 1, CV_64F);
     /*Matlab Code*/
-    /*LowerLayer_Grid(1:h, 1:w) = LowLayer.Conv;
+    for(m=1; m<=h; m++)
+        for(n=1; n<=w; n++)
+            LowerLayer_Grid.at<double>(m-1, n-1) = LowLayer.Conv.at<double>(m-1, n-1);
+
+    for(m=1; m<=h; m++)
+        LowerLayer_Grid.at<double>(m-1, w) = LowerLayer_Grid.at<double>(m-1, w-1);
+
+    for(n=1; n<=w; n++)
+        LowerLayer_Grid.at<double>(h, n-1) = LowerLayer_Grid.at<double>(h-1, n-1);
+
+    LowerLayer_Grid.at<double>(h, w) = LowerLayer_Grid.at<double>(h-1, w-1);
+
+    /*
+    LowerLayer_Grid(1:h, 1:w) = LowLayer.Conv;
     LowerLayer_Grid(1:h, w+1) = LowerLayer_Grid(1:h, w); %copy the last column to the extended
     LowerLayer_Grid(h+1, 1:w) = LowerLayer_Grid(h,1:w);  %copy the last row to the extended
     LowerLayer_Grid(h+1, w+1) = LowerLayer_Grid(h,w);    %copy the right-bottom corner
     idx = 0;*/
 
+    int idx=0;
     /*run whole image for database*/
     PatchNum = (HighHeight - 4) * (HighWidth - 4);
     INumber = BuildINumber;
-    StructPatchRecordTable ret;
-    for(ridx = 1; ridx <= HighWidth - 4; ridx++) {
+    StructPatchRecordTable PRTable[PatchNum];
+    for(m=0; m<PatchNum; m++)
+        PRTable[m].Vector = Mat::zeros(16, 1, CV_64F);
+
+    for(ridx = 1; ridx <= HighWidth - 4; ridx++) 
+    {
     	r = ridx;
-    	for(cidx = 1; cidx <= HighWidth - 4; cidx++) {
+    	for(cidx = 1; cidx <= HighWidth - 4; cidx++) 
+        {
     		c = cidx;
     		fprintf(stderr, "Build whole 4x4 patches for database INumber:%d r:%d c:%d\n", INumber, r, c);
     		/*Compute the grid of low*/
@@ -83,36 +132,92 @@ StructPatchRecordTable BuildINumber(StructSubLayer* L0, StructSubLayer* AllLayer
     		}
     		BottomPortion = 1 - TopPortion;
     		RightPortion = 1 - LeftPortion;
-    		if(TopPortion != 1 && LeftPortion != 1) {
+    		if(TopPortion != 1 && LeftPortion != 1) 
+            {
     			TopLeftPortion = TopPortion * LeftPortion;
     			TopRightPortion = TopPortion * RightPortion;
     			BottomLeftPortion = BottomPortion * LeftPortion;
     			BottomRightPortion = BottomPortion * RightPortion;
     			/*Matlab code*/
+
+                for(m=r1; m<=r1+3; m++)
+                    for(n=c1; n<=c1+3; n++)
+                        TopLeftContribution.at<double>(m-r1, n-c1)=LowerLayer_Grid.at<double>(m-1, n-1)*TopLeftPortion;
+
+                for(m=r1; m<=r1+3; m++)
+                    for(n=c1+1; n<=c1+4; n++)
+                        TopRightContribution.at<double>(m-r1, n-(c1+1))=LowerLayer_Grid.at<double>(m-1, n-1)*TopRightPortion;
+
+                for(m=r1+1; m<=r1+4; m++)
+                    for(n=c1; n<=c1+3; n++)
+                        BottomLeftContribution.at<double>(m-(r1+1), n-c1)=LowerLayer_Grid.at<double>(m-1, n-1)*BottomLeftPortion;
+
+                for(m=r1+1; m<=r1+4; m++)
+                    for(n=c1+1; n<=c1+4; n++)
+                        BottomLeftContribution.at<double>(m-(r1+1), n-(c1+1))=LowerLayer_Grid.at<double>(m-1, n-1)*BottomRightPortion;
+
     			/*TopLeftContribution     = LowerLayer_Grid(r1  :r1+3,c1  :c1+3) * TopLeftPortion;
                 TopRightContribution    = LowerLayer_Grid(r1  :r1+3,c1+1:c1+4) * TopRightPortion;
                 BottomLeftContribution  = LowerLayer_Grid(r1+1:r1+4,c1  :c1+3) * BottomLeftPortion;
                 BottomRightContribution = LowerLayer_Grid(r1+1:r1+4,c1+1:c1+4) * BottomRightPortion;*/
-                LowPatch = TopLeftContribution + TopRightContribution + BottomLeftContribution + BottomRightContribution;
-    		} else if(TopPortion != 1 && LeftPortion == 1) {
+                for(m=0; m<4; m++)
+                    for(n=0; n<4; n++)
+                        LowPatch.at<double>(m, n) = TopLeftContribution.at<double>(m, n) + TopRightContribution.at<double>(m, n) + BottomLeftContribution.at<double>(m, n) + BottomRightContribution.at<double>(m, n);
+    		} 
+            else if(TopPortion != 1 && LeftPortion == 1) 
+            {
     			/*TopContribution = LowerLayer_Grid(r1  :r1+3,c1:c1+3) * TopPortion;
     			BottomContribution = LowerLayer_Grid(r1+1:r1+4,c1:c1+3) * BottomPortion;*/
-    			LowPatch = TopContribution + BottomContribution;
-    		} else if(TopPortion == 1 && LeftPortion != 1) {
+                for(m=r1; m<=r1+3; m++)
+                    for(n=c1; n<=c1+3; n++)
+                        TopContribution.at<double>(m-r1, n-c1)=LowerLayer_Grid.at<double>(m-1, n-1)*TopPortion;
+
+                for(m=r1+1; m<=r1+4; m++)
+                    for(n=c1; n<=c1+3; n++)
+                        TopContribution.at<double>(m-(r1+1), n-c1)=LowerLayer_Grid.at<double>(m-1, n-1)*BottomPortion;
+
+                for(m=0; m<4; m++)
+                    for(n=0; n<4; n++)
+    			        LowPatch.at<double>(m, n) = TopContribution.at<double>(m,n) + BottomContribution.at<double>(m, n);
+    		} 
+            else if(TopPortion == 1 && LeftPortion != 1) 
+            {
     			/*LeftContribution = LowerLayer_Grid(r1:r1+3,c1  :c1+3) * LeftPortion;
-    			RightContribution = LowerLayer_Grid(r1:r1+3,c1+1:c1+4) * RightPortion;*/
+    			RightContribution = LowerLayer_Grid(r1:r1+3,c1+1:c1+4) * RightPortion;
     			LowPatch = LeftContribution + RightContribution;
-    		} else {
+                */
+
+                for(m=r1; m<=r1+3; m++)
+                    for(n=c1; n<=c1+3; n++)
+                        LeftContribution.at<double>(m-r1, n-c1)=LowerLayer_Grid.at<double>(m-1, n-1)*LeftPortion;
+
+                for(m=r1; m<=r1+3; m++)
+                    for(n=c1+1; n<=c1+4; n++)
+                        LeftContribution.at<double>(m-r1, n-(c1+1))=LowerLayer_Grid.at<double>(m-1, n-1)*RightPortion;
+
+                for(m=0; m<4; m++)
+                    for(n=0; n<4; n++)
+                        LowPatch.at<double>(m, n)=LeftContribution.at<double>(m, n)+RightContribution.at<double>(m, n);
+    		} 
+            else 
+            {
     			/*LowPatch = LowerLayer_Grid(r1:r1+3,c1:c1+3);*/
+                for(m=r1; m<=r1+3; m++)
+                    for(n=c1; n<c1+3; n++)
+                        LowPatch.at<double>(m-r1, n-c1)=LowerLayer_Grid.at<double>(m-1, n-1);
     		}
     		/*save the vector and r, c, i*/
-    		ret.HighPatch5x5_r = r;
-    		ret.HighPatch5x5_c = c;
-    		ret.HighPatch5x5_INumber = INumber;
-    		ret.Vector = LowPatch.reshape(16,1);
+    		PRTable[idx].HighPatch5x5_r = r;
+    		PRTable[idx].HighPatch5x5_c = c;
+    		PRTable[idx].HighPatch5x5_INumber = INumber;
+    		PRTable[idx].Vector = LowPatch.reshape(16,1);
+            idx++;
     	}
     }
-    delete ret;
+
+    AllLayers[1].PatchRecordTable = PRTable;
+
+#if 0
     /*run part of the patch for reconstrunction*/
     StructPatchRecordTable ret;
     PatchNum = length(rArray) * length(cArray);
@@ -170,7 +275,10 @@ StructPatchRecordTable BuildINumber(StructSubLayer* L0, StructSubLayer* AllLayer
     	}
     }
     /*return ret;*/
+#endif
 
+
+#if 0
     BuildLayerPatchNumber = sizeof(ret);
     Mat AnnSource(16 , BuildLayerPatchNumber, CV_64FC1);
     for(int j = 1; j <= BuildLayerPatchNumber; j++) {
@@ -193,6 +301,8 @@ StructPatchRecordTable BuildINumber(StructSubLayer* L0, StructSubLayer* AllLayer
         TotalPatchNum += PatchNumForALayer;
     }
 
+#endif
+
     /*Matlab code*/
     /*PatchRecordTable(TotalPatchNum,1) = struct( 'Vector' , zeros(16,1) , 'HighPatch5x5_r' , 0 , 'HighPatch5x5_c' , 0 , 'HighPatch5x5_INumber' , 0);       %16 is the low patchsize, 3 for the corresponding high-res location (INumber,top,left)
     idx = 1;
@@ -202,6 +312,9 @@ StructPatchRecordTable BuildINumber(StructSubLayer* L0, StructSubLayer* AllLayer
         PatchRecordTable(idx:idx+PatchNumForALayer-1) = AllLayers(i+1).PatchRecordTable;
         idx = idx + PatchNumForALayer;
     end*/
+
+#if 0
+
     StructPatchRecordTable ret;
     AnnSearchPoolNumber = sizeof(ret);
     Mat AnnSearchPool(16, AnnSearchPoolNumber);
@@ -304,6 +417,6 @@ StructPatchRecordTable BuildINumber(StructSubLayer* L0, StructSubLayer* AllLayer
                 end
             end
         end
-
+#endif
 }
 

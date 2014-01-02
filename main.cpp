@@ -15,7 +15,7 @@
 #include "SubLayer.h"
 #include "Convolute.h"
 #include "Backprojection.h"
-
+#include "BuildINumber.h"
 
 #if defined(_DEBUG)
 #define dprintf(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
@@ -25,12 +25,10 @@
 
 using namespace cv;
 
-const double ExSmall=1e-12;
-
-StructPatchRecordTable BuildPatchRecordTable(StructSubLayer* HighLayer, StructSubLayer* LowLayer, double ScalePerLayer, int iter)
+void BuildPatchRecordTable(StructSubLayer* HighLayer, StructSubLayer* LowLayer, double ScalePerLayer, int iter, StructPatchRecordTable *retPRTable)
 {
 
-	StructPatchRecordTable ret;
+	//StructPatchRecordTable ret;
 
 	int HighHeight = HighLayer->ValidHeight;
 	int HighWidth = HighLayer->ValidWidth;
@@ -42,6 +40,7 @@ StructPatchRecordTable BuildPatchRecordTable(StructSubLayer* HighLayer, StructSu
     double Top=0.0, Bottom=0.0, Left=0.0, Right=0.0;
     double Sum=0.0, Portion=0.0;
     double PortionTop=0.0, PortionBottom=0.0, PortionLeft=0.0, PortionRight=0.0;
+    int idx=0;
 
         double Scale = pow(ScalePerLayer, (iter-1));      //the Scale mean the res of Con0 to Con-i
         Mat Conv = LowLayer->Conv;
@@ -109,15 +108,19 @@ StructPatchRecordTable BuildPatchRecordTable(StructSubLayer* HighLayer, StructSu
                 }
 
                 //save the vector and r,c,i
-                ret.HighPatch5x5_r = r;
-                ret.HighPatch5x5_c = c;
-                ret.HighPatch5x5_INumber = INumber;
-                ret.Vector = LowPatch.reshape(16,1);           
+                retPRTable[idx].HighPatch5x5_r = r;
+                retPRTable[idx].HighPatch5x5_c = c;
+                retPRTable[idx].HighPatch5x5_INumber = INumber;
+                retPRTable[idx].Vector = LowPatch.clone();
+                retPRTable[idx].Vector = LowPatch.reshape(16,1);           
+                idx++;
             }
         }
 
-	return ret;
 }
+
+
+
 
 Mat GridSubSampling(Mat* Conv, int FormatHeight, int FormatWidth, int ValidHeight, int ValidWidth, 
 		int TrueHeight, int TrueWidth, double Ratio, int HighHeight, int HighWidth)
@@ -336,6 +339,7 @@ int main(int argc, char *argv[])
 	const int NUM_SUBLAYERS=7;
 	double GauVar_r=1.0, GauVar=0.0;
 	double ScalePerLayer=1.25;
+    int ReconPixelOverlap = 4;
 	StructSubLayer SubLayers[NUM_SUBLAYERS]; // sub_layers[0]=L0
 	int iter=1;
 
@@ -389,9 +393,19 @@ int main(int argc, char *argv[])
 #endif
 
 
+    int PatchNum;
+    for(iter=1; iter<=6; iter++)
+    {
+        PatchNum = (SubLayers[iter].ValidHeight-4)*(SubLayers[iter].ValidWidth-4);
+        StructPatchRecordTable *SubLayersPRTable = new StructPatchRecordTable[PatchNum];
+		BuildPatchRecordTable(&SubLayers[iter-1], &SubLayers[iter], ScalePerLayer, iter, SubLayersPRTable);
+        SubLayers[iter].PatchRecordTable = SubLayersPRTable;
+    }
+
 	for(iter=1; iter<NUM_SUBLAYERS; iter++)
     {
-		SubLayers[iter].PatchRecordTable = BuildPatchRecordTable(&SubLayers[iter-1], &SubLayers[iter], ScalePerLayer, iter);
+
+//        BuildINumber_func(iter, SubLayers, ScalePerLayer, ReconPixelOverlap, NUM_SUBLAYERS);
 
 
 //        BackProjection(GauVar_r, iter);

@@ -3,8 +3,6 @@
 #include "Convolute.h"
 #include "Backprojection.h"
 
-const double ExSmall=1e-12;
-
 void BackProjection(double B_GauVar, int BuildINumber, Mat *AverageImage, int BackProjectionLoopNum, StructSubLayer* L0, StructSubLayer* BuildLayer)
 {
 

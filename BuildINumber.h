@@ -27,7 +27,7 @@ Date:       Dec,2013
 /**********************
 *	Program structure
 **********************/
-StructPatchRecordTable BuildINumber(StructSubLayer* L0, StructSubLayer* AllLayers, double ScalePerLayer,int ReconPixelOverlap, int NUM_SUBLAYERS);
+StructPatchRecordTable BuildINumber_func(int, StructSubLayer* AllLayers, double ScalePerLayer,int ReconPixelOverlap, int NUM_SUBLAYERS);
 
 
 /**********************
